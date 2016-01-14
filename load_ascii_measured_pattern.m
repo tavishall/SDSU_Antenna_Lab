@@ -1,14 +1,9 @@
-% Hopefully this will help me load the pattern that I have measured in the
-% chamber without doing it manually
-
-% I am assuming that the format of the file I have will be the same always
-
 %% User input variables
 % Enter all needed variables here to convert to gain
 % Note that frequency is read from the files
 
 dist = 1.5; % Distance from feed to antenna in meters
-Gt = 6; % Gain of transmitter in dB
+Gt = 6; % Gain of transmitter in dB at one freq
 
 %% Read in data from file
 
@@ -21,11 +16,10 @@ if fid == -1
 end
 
 configCount = 0;
-valueCount = 0; % Counts for each theta cut
+valueCount = 0;
 line = fgetl(fid);
 while ischar(line)
     pieces = regexp(line,'\t','split');
-    %fprintf('Pieces{1} = %s\n', pieces{1});
     if isnan(str2double(pieces{1}))
         switch pieces{1}
             case 'File Name:'
@@ -36,7 +30,6 @@ while ischar(line)
                 feedRot(configCount) = str2double(pieces{2});
             case 'Frequency'
                 % Get the frequency of experiment
-                % They put a G for GHz, not sure if they use M for MHz
                 subPieces = regexp(pieces{2}, ' ', 'split');
                 freq(configCount) = str2double(subPieces{1});
             case 'AUT_Roll  ' % Two spaces after AUT_Roll
@@ -64,6 +57,7 @@ while ischar(line)
 end
 
 fclose(fid);
+%% Update user on what was read
 fprintf('Read file: %s\n', fullFileName);
 fprintf('Read in %d configurations\n', configCount);
 fprintf('Each configuration had %d values\n', valueCount); % Same count?
@@ -75,17 +69,13 @@ fprintf('%.2f, ', feedRot(:));
 fprintf('\n');
 
 %% Convert amplitudes to gains using Friss Transmission Equation
-
 if length(unique(freq)) ~= 1
     error(['Different frequencies in same file?',...
-           'Computer blowing up in 3...2...',...
-           'But really, that is not supported just yet.',...
+           'This is not supported yet.',...
            'Break up the files by frequency and this MIGHT work.']);
 end
 
-% FROM EXCEL
 % =-GT +AMP  +(20*LOG(12.56*Radius / WAVELENGTH)) 
-% FROM EXCEL
 
 wavelength = 0.3 / freq(1);
 gain = -Gt + amplitude + (20*log10(12.56*dist./wavelength));
@@ -96,7 +86,6 @@ newName = sprintf('%s_GainOutput.csv', n);
 saveFileName = fullfile(p,newName);
 
 %dB(RealizedGainPhi) [] - Freq='0.725GHz' Phi='0deg'
-
 header = {'Theta [deg]',...
           sprintf('dB(RealizedGainPhi) [] - Freq=''%.3fGHz'' Phi=''0deg''', freq(1)),...
           sprintf('dB(RealizedGainPhi) [] - Freq=''%.3fGHz'' Phi=''0deg''', freq(1)),...
